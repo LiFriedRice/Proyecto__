@@ -1,103 +1,81 @@
+import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
-import streamlit as st
+import seaborn as sns
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
 
-def generate_plots(df, start_row, end_row):
-    # Filtrar el DataFrame por el rango de filas
-    df_filtered = df.iloc[start_row:end_row + 1]
+# Configuración de Streamlit
+st.title('Análisis de Datos de Videojuegos')
 
-    # Años y géneros únicos
-    x_years = df_filtered['Year_of_Release'].unique()
-    x_Genre = df_filtered['Genre'].unique()
+# Cargar el archivo CSV usando el cargador de archivos de Streamlit
+archivo_csv = st.file_uploader("Sube tu archivo CSV", type="csv")
 
-    # Ordenar años y géneros
-    x_years = np.sort(x_years)
-    x_Genre = np.sort(x_Genre)
+if archivo_csv:
+    try:
+        # Cargar los datos
+        data = pd.read_csv(archivo_csv)
 
-    # Convertir años y géneros en índices numéricos
-    x_years_indices = np.arange(len(x_years))
-    x_Genre_indices = np.arange(len(x_Genre))
+        # Mostrar las primeras filas del dataset
+        st.write(data.head())
 
-    # Para el gráfico de barras por año
-    fig1, ax1 = plt.subplots(figsize=(14,7))
-    bar_width = 0.2
-    df_sorted_years = df_filtered.groupby('Year_of_Release').sum().reindex(x_years).fillna(0)
-    ax1.bar(x_years_indices - 1.5 * bar_width, df_sorted_years['NA_Sales'], width=bar_width, label='NA Sales')
-    ax1.bar(x_years_indices - 0.5 * bar_width, df_sorted_years['EU_Sales'], width=bar_width, label='EU Sales')
-    ax1.bar(x_years_indices + 0.5 * bar_width, df_sorted_years['JP_Sales'], width=bar_width, label='JP Sales')
-    ax1.bar(x_years_indices + 1.5 * bar_width, df_sorted_years['Other_Sales'], width=bar_width, label='Other Sales')
-    ax1.set_title('Ventas por Año (Gráfico de Barras)')
-    ax1.set_xlabel('Año')
-    ax1.set_ylabel('Ventas')
-    ax1.set_xticks(x_years_indices)
-    ax1.set_xticklabels(x_years)
-    ax1.legend()
-    
-    # Para el gráfico de líneas por año
-    fig2, ax2 = plt.subplots(figsize=(14,7))
-    ax2.plot(x_years_indices, df_sorted_years['NA_Sales'], label='NA Sales', marker='o')
-    ax2.plot(x_years_indices, df_sorted_years['EU_Sales'], label='EU Sales', marker='o')
-    ax2.plot(x_years_indices, df_sorted_years['JP_Sales'], label='JP Sales', marker='o')
-    ax2.plot(x_years_indices, df_sorted_years['Other_Sales'], label='Other Sales', marker='o')
-    ax2.set_title('Ventas por Año (Gráfico de Líneas)')
-    ax2.set_xlabel('Año')
-    ax2.set_ylabel('Ventas')
-    ax2.set_xticks(x_years_indices)
-    ax2.set_xticklabels(x_years)
-    ax2.legend()
+        # Función para graficar y mostrar gráficos en Streamlit
+        def plot_and_show(data, x, y, title, xlabel, ylabel, plot_type='line', color='blue'):
+            plt.figure(figsize=(10, 6))
+            if plot_type == 'line':
+                sns.lineplot(x=x, y=y, data=data, color=color)
+            elif plot_type == 'bar':
+                sns.barplot(x=x, y=y, data=data, color=color)
+            plt.title(title)
+            plt.xlabel(xlabel)
+            plt.ylabel(ylabel)
+            plt.grid(True)
+            st.pyplot(plt.gcf())
+            plt.close()
 
-    # Para el gráfico de barras por género
-    fig3, ax3 = plt.subplots(figsize=(14,7))
-    df_sorted_genre = df_filtered.groupby('Genre').sum().reindex(x_Genre).fillna(0)
-    ax3.bar(x_Genre_indices - 1.5 * bar_width, df_sorted_genre['NA_Sales'], width=bar_width, label='NA Sales')
-    ax3.bar(x_Genre_indices - 0.5 * bar_width, df_sorted_genre['EU_Sales'], width=bar_width, label='EU Sales')
-    ax3.bar(x_Genre_indices + 0.5 * bar_width, df_sorted_genre['JP_Sales'], width=bar_width, label='JP Sales')
-    ax3.bar(x_Genre_indices + 1.5 * bar_width, df_sorted_genre['Other_Sales'], width=bar_width, label='Other Sales')
-    ax3.set_title('Ventas por Género (Gráfico de Barras)')
-    ax3.set_xlabel('Género')
-    ax3.set_ylabel('Ventas')
-    ax3.set_xticks(x_Genre_indices)
-    ax3.set_xticklabels(x_Genre, rotation=90)
-    ax3.legend()
+        # Visualización de datos generales
+        plot_and_show(data, 'Genre', 'Global_Sales', 'Ventas Globales por Género', 'Género', 'Ventas Globales', 'bar', 'teal')
+        plot_and_show(data, 'Publisher', 'Global_Sales', 'Ventas Globales por Publicadora', 'Publicadora', 'Ventas Globales', 'bar', 'coral')
+        plot_and_show(data, 'Critic_Score', 'Global_Sales', 'Ventas Globales vs Puntuación de Críticos', 'Puntuación de Críticos', 'Ventas Globales', 'line', 'green')
+        plot_and_show(data, 'User_Score', 'Global_Sales', 'Ventas Globales vs Puntuación de Usuarios', 'Puntuación de Usuarios', 'Ventas Globales', 'line', 'orange')
 
-    # Para el gráfico de líneas por género
-    fig4, ax4 = plt.subplots(figsize=(14,7))
-    ax4.plot(x_Genre_indices, df_sorted_genre['NA_Sales'], label='NA Sales', marker='o')
-    ax4.plot(x_Genre_indices, df_sorted_genre['EU_Sales'], label='EU Sales', marker='o')
-    ax4.plot(x_Genre_indices, df_sorted_genre['JP_Sales'], label='JP Sales', marker='o')
-    ax4.plot(x_Genre_indices, df_sorted_genre['Other_Sales'], label='Other Sales', marker='o')
-    ax4.set_title('Ventas por Género (Gráfico de Líneas)')
-    ax4.set_xlabel('Género')
-    ax4.set_ylabel('Ventas')
-    ax4.set_xticks(x_Genre_indices)
-    ax4.set_xticklabels(x_Genre, rotation=90)
-    ax4.legend()
+        # Seleccionar una publicadora para el análisis de regresión lineal
+        publicadoras = data['Publisher'].unique()
+        publicadora_seleccionada = st.selectbox("Selecciona una publicadora", publicadoras)
 
-    return fig1, fig2, fig3, fig4
+        # Filtrar datos para la publicadora seleccionada
+        data_publicadora = data[data['Publisher'] == publicadora_seleccionada]
 
-# Aplicación Streamlit
-st.title("Aplicación de Análisis de Datos")
+        if not data_publicadora.empty:
+            # Realizar la regresión lineal
+            X = data_publicadora[['Critic_Score', 'User_Score']].fillna(0).values
+            y = data_publicadora['Global_Sales'].values
 
-uploaded_file = st.file_uploader("Seleccione un archivo CSV", type="csv")
+            # Ajustar modelo de regresión lineal
+            model = LinearRegression()
+            model.fit(X, y)
+            predictions = model.predict(X)
+            r2 = r2_score(y, predictions)
 
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
+            # Graficar la regresión lineal
+            plt.figure(figsize=(10, 6))
+            sns.scatterplot(x='Critic_Score', y='Global_Sales', data=data_publicadora, color='blue', label='Datos Reales')
+            sns.lineplot(x=data_publicadora['Critic_Score'], y=predictions, color='red', label='Predicción')
+            plt.title(f'Regresión Lineal: Ventas Globales en {publicadora_seleccionada}')
+            plt.xlabel('Puntuación de Críticos')
+            plt.ylabel('Ventas Globales')
+            plt.grid(True)
+            st.pyplot(plt.gcf())
+            plt.close()
 
-    st.write("Archivo cargado exitosamente.")
-    
-    start_row = st.number_input("Fila de inicio (0-indexado):", min_value=0, value=0)
-    end_row = st.number_input("Fila de fin (0-indexado):", min_value=0, value=len(df)-1)
-    
-    if st.button("Procesar Datos"):
-        if start_row < 0 or end_row < start_row:
-            st.error("Las filas de inicio y fin no son válidas.")
+            # Mostrar el valor de R²
+            st.write(f'Precisión de la regresión lineal (R²) para {publicadora_seleccionada}: {r2:.2f}')
         else:
-            figs = generate_plots(df, start_row, end_row)
-            
-            st.pyplot(figs[0])
-            st.pyplot(figs[1])
-            st.pyplot(figs[2])
-            st.pyplot(figs[3])
+            st.warning("No hay suficientes datos para realizar la regresión lineal.")
+
+    except pd.errors.EmptyDataError:
+        st.error("El archivo está vacío. Por favor, verifique el contenido del archivo.")
+    except Exception as e:
+        st.error(f"Ocurrió un error al procesar el archivo: {e}")
 else:
-    st.info("Por favor, cargue un archivo CSV.")
+    st.info("Por favor, sube un archivo CSV para comenzar.")
